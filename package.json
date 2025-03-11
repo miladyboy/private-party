@@ -1,0 +1,30 @@
+{
+  "name": "partystream",
+  "version": "1.0.0",
+  "description": "Platform to connect DJs with hosts for private streaming parties",
+  "main": "index.js",
+  "scripts": {
+    "backend:install": "cd src/backend && npm install",
+    "frontend:install": "cd src/frontend && npm install",
+    "install:all": "npm install && npm run backend:install && npm run frontend:install",
+    "backend:dev": "cd src/backend && npm run dev",
+    "frontend:dev": "cd src/frontend && npm run dev",
+    "backend:test": "cd src/backend && npm run test",
+    "frontend:test": "cd src/frontend && npm run test",
+    "test": "npm run backend:test && npm run frontend:test",
+    "db:setup": "cd src/backend && npm run db:setup",
+    "backend:start": "cd src/backend && npm start",
+    "frontend:build": "cd src/frontend && npm run build",
+    "frontend:start": "cd src/frontend && npm start",
+    "start": "npm run backend:start"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}

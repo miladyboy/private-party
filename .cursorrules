@@ -1,0 +1,218 @@
+# Cursor Rules for PartyStream Development
+
+# Configures AI behavior, stack preferences, and optimization goals
+
+---
+
+version: 1.0
+name: PartyStreamRules
+description: Rules for developing PartyStream with React, Node.js/Express, Supabase, and AWS, optimized for mobile responsiveness and API scalability.
+
+# General Instructions
+
+general:
+
+- Always up-to-date with the latest stable versions of React (latest), Node.js (v20.x), Express.js (latest), and Supabase (latest).
+- Follow best practices for web development, including semantic HTML, accessibility (WCAG 2.1), and performance optimization.
+- Provide accurate, factual, and concise answers, reasoning like a senior developer with expertise in AI-driven development.
+- Prioritize mobile responsiveness, API scalability, and low-latency streaming (sub-300ms with Amazon IVS).
+
+# Technical Preferences
+
+technical:
+
+- frontend:
+  - framework: React.js (latest stable version)
+  - components:
+    - Use kebab-case for component names (e.g., `dj-profile.tsx`, `party-streaming.tsx`)
+    - Favor React Server Components and Next.js SSR features where possible (defer to client components only for interactive streaming features)
+    - Minimize 'use client' directives to small, isolated components (e.g., real-time chat, streaming controls)
+    - Always add loading and error states to data-fetching components (e.g., DJ profiles, booking status)
+    - Implement error handling and logging for frontend errors (e.g., Sentry or console logging)
+    - Use semantic HTML elements (e.g., `<header>`, `<main>`) and ARIA attributes for accessibility
+    - Optimize for mobile responsiveness using react-responsive or CSS media queries (e.g., prioritize touch-friendly interfaces, viewport scaling)
+  - libraries:
+    - Use react-responsive for media queries and responsive design testing
+    - Integrate Amazon IVS SDK for real-time streaming (sub-300ms latency)
+    - Use WebSocket or Socket.io for real-time chat features
+- backend:
+  - framework: Node.js with Express.js (latest stable versions)
+  - database: Supabase (PostgreSQL-based, cloud-hosted)
+    - Use Supabase client libraries for JavaScript (Node.js and React)
+    - Optimize queries for scalability (e.g., indexing, pagination for large datasets like DJ profiles)
+    - Implement real-time subscriptions for live updates (e.g., DJ availability, streaming status)
+  - api:
+    - Design RESTful APIs with Express.js, optimized for scalability (e.g., rate limiting, caching with Redis)
+    - Use JWT for authentication and authorization (secure user/DJ sessions)
+    - Integrate Stripe API for payment processing (PCI-compliant, secure transactions)
+    - Ensure API endpoints handle low-latency streaming data (e.g., Amazon IVS metadata, WebSocket events)
+  - performance:
+    - Minimize server load with AWS Lambda or EC2 auto-scaling
+    - Cache frequently accessed data (e.g., DJ profiles, bookings) using Redis or Supabase Edge Functions
+    - Implement error handling and logging (e.g., Winston or Bunyan for Node.js)
+- infrastructure:
+  - cloud: AWS (Amazon Web Services)
+    - Use Amazon IVS for real-time streaming (sub-300ms latency)
+    - Host backend on AWS EC2 or Lambda, static assets on S3, database on Supabase
+    - Enable load balancing and auto-scaling for scalability
+  - security:
+    - Encrypt data in transit (TLS/SSL) and at rest (Supabase encryption)
+    - Comply with GDPR, CCPA, and PCI standards for user data and payments
+    - Protect against DDoS attacks (e.g., AWS WAF, rate limiting)
+
+# Development Preferences
+
+development:
+
+- workflow:
+  - Use GitHub for version control, with clear commit messages (e.g., "feat: add DJ profile API", "fix: resolve streaming latency")
+  - Follow agile iterations: MVP first, then optimize for mobile, scalability, and new features
+  - Start with small, incremental changes (e.g., single DJ/host per party, then scale)
+- testing:
+  - Implement unit tests with Jest for React and Node.js components
+  - Use Cypress or Playwright for end-to-end testing of web interfaces (focus on mobile responsiveness)
+  - Test Amazon IVS streaming latency (sub-300ms) and API performance under load
+- documentation:
+  - Generate MDX or Markdown files for code documentation (e.g., `architecture.md`, `implementation.md`)
+  - Use Sonnet 3.7 to document each phase, asking 9–10 clarifying questions per phase (e.g., "What’s the expected latency for 100 viewers?")
+  - Maintain an `architecture.md` file for projects >20k LOC, mapping system structure
+
+# AI Behavior Preferences
+
+ai:
+
+- model:
+  - Default to Sonnet 3.7 for coding tasks, documentation, and phase implementation
+  - Switch to Grok 3 for stack recommendations, PRD generation, and complex troubleshooting
+  - Use Sonnet 4.5 for refining user-facing messaging or UI/UX improvements
+- queries:
+  - Ask 9–10 clarifying questions per phase (e.g., "How should mobile scaling differ from desktop?", "What’s the priority for API latency?")
+  - Respond to user answers by updating implementation files (e.g., `implementation.md`, `architecture.md`)
+- troubleshooting:
+  - If stuck, use Grok 3 to analyze GitHub repo and generate prompts for Claude
+  - For severe blocks, revert commits, try alternatives, or drag problematic files into Cursor for Sonnet’s “Thinking” mode
+- optimization:
+  - Prioritize mobile responsiveness (e.g., touch-friendly buttons, viewport scaling)
+  - Ensure API scalability (e.g., rate limiting, caching, load balancing)
+  - Maintain sub-300ms latency for Amazon IVS streaming
+
+# Example Prompts
+
+examples:
+
+- user_query: "Build a React component for the DJ profile page, optimized for mobile."
+  ai_response: |
+  <Thinking> I’ll create a `dj-profile.tsx` React Server Component with mobile responsiveness using react-responsive. It’ll include loading states, error handling, and semantic HTML for accessibility. </Thinking>
+  ```tsx
+  // dj-profile.tsx
+  "use server";
+  import { useMediaQuery } from "react-responsive";
+  import { fetchDJProfile } from "../api/dj";
+
+  export default async function DJProfile({ djId }: { djId: string }) {
+    const isMobile = useMediaQuery({ maxWidth: 767 });
+    const { data, error } = await fetchDJProfile(djId);
+
+    if (error)
+      return <div role="alert">Error loading DJ profile: {error.message}</div>;
+    if (!data) return <div>Loading...</div>;
+
+    return (
+      <main className="dj-profile">
+        <h1>{data.name}</h1>
+        <p>Genre: {data.genre}</p>
+        <p>Price: ${data.price}/hour</p>
+        <a href={data.videoLink} target="_blank" rel="noopener noreferrer">
+          Watch Sample
+        </a>
+        {isMobile ? (
+          <button className="book-btn-mobile" onClick={() => bookDJ(djId)}>
+            Book Now (Touch-Friendly)
+          </button>
+        ) : (
+          <button className="book-btn" onClick={() => bookDJ(djId)}>
+            Book Now
+          </button>
+        )}
+        <style jsx>{`
+          .dj-profile {
+            padding: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+          }
+          .book-btn-mobile {
+            font-size: 1.2rem;
+            padding: 1rem;
+            width: 100%;
+          }
+          .book-btn {
+            font-size: 1rem;
+            padding: 0.5rem 1rem;
+          }
+          @media (max-width: 767px) {
+            .dj-profile {
+              padding: 0.5rem;
+            }
+          }
+        `}</style>
+      </main>
+    );
+  }
+  ```
+- user_query: "Optimize the Node.js/Express API for scalability."
+  ai_response: |
+  <Thinking> I’ll optimize the Express API with rate limiting, caching, and Supabase query improvements for scalability. </Thinking>
+
+  ```javascript
+  // server.js
+  const express = require("express");
+  const rateLimit = require("express-rate-limit");
+  const { createClient } = require("@supabase/supabase-js");
+  const Redis = require("redis");
+  const app = express();
+
+  // Rate limiting for API scalability
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per windowMs
+  });
+  app.use(limiter);
+
+  // Redis cache for frequently accessed data
+  const redisClient = Redis.createClient({ url: "redis://localhost:6379" });
+  app.use(async (req, res, next) => {
+    if (req.path === "/api/djs") {
+      const cacheKey = `djs_${req.query.genre || "all"}`;
+      const cached = await redisClient.get(cacheKey);
+      if (cached) return res.json(JSON.parse(cached));
+    }
+    next();
+  });
+
+  // Supabase client for scalable queries
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_KEY,
+    {
+      realtime: { subscribe: true },
+    }
+  );
+
+  // Example API endpoint for DJ profiles
+  app.get("/api/djs", async (req, res) => {
+    const { data, error } = await supabase
+      .from("djs")
+      .select("*")
+      .order("rating", { ascending: false })
+      .limit(10); // Paginate for scalability
+    if (error) return res.status(500).json({ error });
+    await redisClient.setEx(
+      `djs_${req.query.genre || "all"}`,
+      3600,
+      JSON.stringify(data)
+    );
+    res.json(data);
+  });
+
+  app.listen(3000, () => console.log("Server running on port 3000"));
+  ```

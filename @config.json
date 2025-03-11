@@ -1,0 +1,59 @@
+{
+  "app": {
+    "name": "Private Party",
+    "version": "1.0.0",
+    "description": "DJ Booking & Streaming Platform"
+  },
+  "api": {
+    "baseUrl": "http://localhost:5000/api",
+    "timeout": 10000,
+    "retryAttempts": 3
+  },
+  "streaming": {
+    "provider": "amazon-ivs",
+    "maxBitrate": 3500000,
+    "targetLatency": 300,
+    "chatMessageLimit": 100
+  },
+  "booking": {
+    "minDuration": 2,
+    "maxDuration": 8,
+    "cancellationPeriod": 48,
+    "defaultCurrency": "USD"
+  },
+  "ui": {
+    "primaryColor": "#7209b7",
+    "secondaryColor": "#3a0ca3",
+    "errorColor": "#f50057",
+    "successColor": "#4caf50",
+    "warningColor": "#ff9800",
+    "infoColor": "#2196f3",
+    "fontFamily": "Poppins, Roboto, Helvetica, Arial, sans-serif",
+    "borderRadius": 8,
+    "cardBorderRadius": 12,
+    "buttonBorderRadius": 8
+  },
+  "pagination": {
+    "defaultPageSize": 8,
+    "pageSizeOptions": [4, 8, 12, 24]
+  },
+  "validation": {
+    "password": {
+      "minLength": 8,
+      "requireUppercase": true,
+      "requireLowercase": true,
+      "requireNumber": true,
+      "requireSpecialChar": true
+    },
+    "email": {
+      "pattern": "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+    }
+  },
+  "features": {
+    "enableLiveStreaming": true,
+    "enableChat": true,
+    "enableRatings": true,
+    "enablePayments": true,
+    "enableNotifications": true
+  }
+}
