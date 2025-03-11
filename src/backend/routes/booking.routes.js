@@ -1,6 +1,6 @@
 const express = require("express");
 const BookingController = require("../controllers/booking.controller");
-const { authenticate } = require("../middleware/auth");
+const { authenticateJWT } = require("../middleware/auth");
 const { rateLimiter } = require("../middleware/rate-limiter");
 
 const router = express.Router();
@@ -15,14 +15,14 @@ const router = express.Router();
  * @desc    Get all bookings for current user
  * @access  Private (Host, DJ)
  */
-router.get("/me", authenticate, BookingController.getMyBookings);
+router.get("/me", authenticateJWT, BookingController.getMyBookings);
 
 /**
  * @route   GET /api/bookings/:id
  * @desc    Get booking by ID
  * @access  Private (Host, DJ of this booking)
  */
-router.get("/:id", authenticate, BookingController.getBookingById);
+router.get("/:id", authenticateJWT, BookingController.getBookingById);
 
 /**
  * @route   POST /api/bookings
@@ -31,7 +31,7 @@ router.get("/:id", authenticate, BookingController.getBookingById);
  */
 router.post(
   "/",
-  authenticate,
+  authenticateJWT,
   rateLimiter("booking_create", 10, 60 * 60), // 10 requests per hour
   BookingController.createBooking
 );
@@ -43,7 +43,7 @@ router.post(
  */
 router.put(
   "/:id",
-  authenticate,
+  authenticateJWT,
   rateLimiter("booking_update", 20, 60 * 60), // 20 requests per hour
   BookingController.updateBooking
 );
@@ -55,7 +55,7 @@ router.put(
  */
 router.patch(
   "/:id/status",
-  authenticate,
+  authenticateJWT,
   rateLimiter("booking_status", 15, 60 * 60), // 15 requests per hour
   BookingController.updateBookingStatus
 );
@@ -65,6 +65,6 @@ router.patch(
  * @desc    Delete booking
  * @access  Private (Host of this booking, Admin)
  */
-router.delete("/:id", authenticate, BookingController.deleteBooking);
+router.delete("/:id", authenticateJWT, BookingController.deleteBooking);
 
 module.exports = router;

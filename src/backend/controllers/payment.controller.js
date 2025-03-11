@@ -4,7 +4,10 @@ const DjProfile = require("../models/DjProfile");
 const User = require("../models/User");
 const { logger } = require("../utils/database");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const config = require("../config/config.json");
+const fs = require("fs");
+const path = require("path");
+const configPath = path.join(__dirname, "../../config/config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 /**
  * Payment Controller - Handlers for payment-related API endpoints

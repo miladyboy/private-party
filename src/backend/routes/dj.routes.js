@@ -1,10 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const DjController = require("../controllers/dj.controller");
-const {
-  authenticateJWT,
-  authorizeRole,
-} = require("../middleware/auth.middleware");
+const { authenticateJWT, authorizeRole } = require("../middleware/auth");
 
 /**
  * @route   GET /api/djs

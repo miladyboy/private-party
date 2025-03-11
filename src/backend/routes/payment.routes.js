@@ -1,6 +1,6 @@
 const express = require("express");
 const PaymentController = require("../controllers/payment.controller");
-const { authenticate } = require("../middleware/auth");
+const { authenticateJWT } = require("../middleware/auth");
 const { rateLimiter } = require("../middleware/rate-limiter");
 const { rawBodyMiddleware } = require("../middleware/raw-body");
 
@@ -16,7 +16,7 @@ const router = express.Router();
  * @desc    Get payment by ID
  * @access  Private (Host or DJ of this payment's booking)
  */
-router.get("/:id", authenticate, PaymentController.getPaymentById);
+router.get("/:id", authenticateJWT, PaymentController.getPaymentById);
 
 /**
  * @route   GET /api/payments/booking/:bookingId
@@ -25,7 +25,7 @@ router.get("/:id", authenticate, PaymentController.getPaymentById);
  */
 router.get(
   "/booking/:bookingId",
-  authenticate,
+  authenticateJWT,
   PaymentController.getPaymentsByBookingId
 );
 
@@ -36,7 +36,7 @@ router.get(
  */
 router.post(
   "/create-intent",
-  authenticate,
+  authenticateJWT,
   rateLimiter("payment_intent", 10, 60 * 60), // 10 requests per hour
   PaymentController.createPaymentIntent
 );

@@ -10,7 +10,10 @@ const {
   GetStreamKeyCommand,
   CreateStreamKeyCommand,
 } = require("@aws-sdk/client-ivs");
-const config = require("../config/config.json");
+const fs = require("fs");
+const path = require("path");
+const configPath = path.join(__dirname, "../../config/config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 // Initialize AWS IVS client
 const ivsClient = new IvsClient({

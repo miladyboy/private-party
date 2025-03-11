@@ -3,7 +3,10 @@ const chaiHttp = require("chai-http");
 const { app } = require("../../server");
 const { createClient } = require("@supabase/supabase-js");
 const jwt = require("jsonwebtoken");
-const config = require("../../config/config.json");
+const fs = require("fs");
+const path = require("path");
+const configPath = path.join(__dirname, "../../../config/config.json");
+const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 // Configure chai
 chai.use(chaiHttp);

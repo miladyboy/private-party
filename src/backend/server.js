@@ -1,19 +1,14 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
-const fs = require("fs");
-const path = require("path");
 const winston = require("winston");
 const { createClient } = require("@supabase/supabase-js");
 const http = require("http");
 const { Server } = require("socket.io");
 const ChatController = require("./controllers/chat.controller");
-
-// Load configuration
-const configPath = path.join(__dirname, "../config/config.json");
-const config = JSON.parse(fs.readFileSync(configPath, "utf8"));
 
 // Initialize logger
 const logger = winston.createLogger({
@@ -31,7 +26,10 @@ const logger = winston.createLogger({
 });
 
 // Initialize Supabase client
-const supabase = createClient(config.database.url, config.database.key);
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_KEY
+);
 
 // Initialize Express app
 const app = express();
@@ -40,7 +38,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || config.server.corsOrigin,
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -73,7 +71,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "ok",
     message: "PartyStream API is running",
-    version: config.app.version,
+    version: process.env.APP_VERSION,
     timestamp: new Date().toISOString(),
   });
 });
@@ -119,9 +117,9 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || config.server.port;
+const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  logger.info(`Server running on port ${PORT} in ${config.server.env} mode`);
+  logger.info(`Server running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   logger.info(`Socket.io initialized for real-time communication`);
 });
 

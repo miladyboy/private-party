@@ -1,6 +1,6 @@
 const express = require("express");
 const ChatController = require("../controllers/chat.controller");
-const { authenticate } = require("../middleware/auth");
+const { authenticateJWT } = require("../middleware/auth");
 const { rateLimiter } = require("../middleware/rate-limiter");
 
 const router = express.Router();
@@ -15,7 +15,7 @@ const router = express.Router();
  * @desc    Get chat messages for a booking
  * @access  Private (Host or DJ of this booking)
  */
-router.get("/booking/:bookingId", authenticate, ChatController.getChatMessages);
+router.get("/booking/:bookingId", authenticateJWT, ChatController.getChatMessages);
 
 /**
  * @route   POST /api/chat/message
@@ -24,7 +24,7 @@ router.get("/booking/:bookingId", authenticate, ChatController.getChatMessages);
  */
 router.post(
   "/message",
-  authenticate,
+  authenticateJWT,
   rateLimiter("chat_message", 60, 60), // 60 messages per minute
   ChatController.createChatMessage
 );

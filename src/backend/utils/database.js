@@ -25,8 +25,11 @@ const logger = winston.createLogger({
   ],
 });
 
-// Initialize Supabase client
-const supabase = createClient(config.database.url, config.database.key);
+// Initialize Supabase client using environment variables or config fallback
+const supabase = createClient(
+  process.env.SUPABASE_URL || config.database.url,
+  process.env.SUPABASE_KEY || config.database.key
+);
 
 /**
  * Database schema definitions

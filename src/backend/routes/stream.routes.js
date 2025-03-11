@@ -1,6 +1,6 @@
 const express = require("express");
 const StreamController = require("../controllers/stream.controller");
-const { authenticate } = require("../middleware/auth");
+const { authenticateJWT } = require("../middleware/auth");
 const { rateLimiter } = require("../middleware/rate-limiter");
 
 const router = express.Router();
@@ -15,7 +15,7 @@ const router = express.Router();
  * @desc    Get stream by ID
  * @access  Private (Host or DJ of this stream)
  */
-router.get("/:id", authenticate, StreamController.getStreamById);
+router.get("/:id", authenticateJWT, StreamController.getStreamById);
 
 /**
  * @route   GET /api/streams/booking/:bookingId
@@ -24,7 +24,7 @@ router.get("/:id", authenticate, StreamController.getStreamById);
  */
 router.get(
   "/booking/:bookingId",
-  authenticate,
+  authenticateJWT,
   StreamController.getStreamByBookingId
 );
 
@@ -35,7 +35,7 @@ router.get(
  */
 router.post(
   "/",
-  authenticate,
+  authenticateJWT,
   rateLimiter("stream_create", 5, 60 * 60), // 5 requests per hour
   StreamController.createStream
 );
@@ -47,7 +47,7 @@ router.post(
  */
 router.patch(
   "/:id/start",
-  authenticate,
+  authenticateJWT,
   rateLimiter("stream_start", 5, 60 * 60), // 5 requests per hour
   StreamController.startStream
 );
@@ -59,7 +59,7 @@ router.patch(
  */
 router.patch(
   "/:id/end",
-  authenticate,
+  authenticateJWT,
   rateLimiter("stream_end", 5, 60 * 60), // 5 requests per hour
   StreamController.endStream
 );
@@ -69,6 +69,6 @@ router.patch(
  * @desc    Delete stream
  * @access  Private (Admin only)
  */
-router.delete("/:id", authenticate, StreamController.deleteStream);
+router.delete("/:id", authenticateJWT, StreamController.deleteStream);
 
 module.exports = router;
