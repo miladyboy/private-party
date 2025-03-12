@@ -93,7 +93,7 @@ src/
    - Create `.env` files in both frontend and backend directories
    - Backend `.env` should include:
      ```
-     PORT=5000
+     PORT=4000
      NODE_ENV=development
      JWT_SECRET=your_jwt_secret
      SUPABASE_URL=your_supabase_url

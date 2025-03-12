@@ -81,7 +81,11 @@ const User = {
       });
 
       if (authError) {
-        logger.error(`Error creating Supabase Auth user: ${authError.message}`);
+        logger.error(
+          `Error creating Supabase Auth user: ${
+            authError.message || "Unknown auth error"
+          }`
+        );
         throw authError;
       }
 
@@ -98,6 +102,10 @@ const User = {
 
       const result = await db.insert(TABLES.USERS, newUser);
 
+      if (!result || result.length === 0) {
+        throw new Error("Failed to insert user into database");
+      }
+
       // Generate token
       const token = generateToken(result[0]);
 
@@ -113,7 +121,9 @@ const User = {
         token,
       };
     } catch (error) {
-      logger.error(`Error creating user: ${error.message}`);
+      logger.error(
+        `Error creating user: ${error ? error.message : "Unknown error"}`
+      );
       throw error;
     }
   },

@@ -124,13 +124,17 @@ const db = {
         .select();
 
       if (error) {
-        logger.error(`Error inserting into ${table}: ${error.message}`);
+        logger.error(
+          `Error inserting into ${table}: ${error.message || "Unknown error"}`
+        );
         throw error;
       }
 
       return result;
     } catch (error) {
-      logger.error(`Database error in insert: ${error.message}`);
+      logger.error(
+        `Database error in insert: ${error ? error.message : "Unknown error"}`
+      );
       throw error;
     }
   },

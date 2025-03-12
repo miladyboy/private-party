@@ -1,28 +1,74 @@
 const { createClient } = require("@supabase/supabase-js");
-const fs = require("fs");
 const path = require("path");
 const dotenv = require("dotenv");
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from backend .env file
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-// If no environment variables, try to load from config file
-let config;
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
-  try {
-    const configPath = path.join(__dirname, "../../config/config.json");
-    config = JSON.parse(fs.readFileSync(configPath, "utf8"));
-  } catch (error) {
-    console.error("Error loading config file:", error.message);
-    process.exit(1);
-  }
+// Get Supabase credentials from environment variables
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_KEY;
+
+// Validate Supabase credentials
+if (!supabaseUrl || !supabaseKey) {
+  console.error(
+    "Supabase URL and key are required. Please set SUPABASE_URL and SUPABASE_KEY in your src/backend/.env file"
+  );
+  process.exit(1);
 }
 
+// Log for debugging (remove in production)
+console.log(`Connecting to Supabase at: ${supabaseUrl}`);
+
 // Initialize Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL || config.database.url,
-  process.env.SUPABASE_KEY || config.database.key
-);
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+/**
+ * Execute SQL query
+ * @param {string} sql - SQL query to execute
+ * @param {string} description - Description of the query for logging
+ * @returns {Promise<void>}
+ */
+async function executeSql(sql, description) {
+  try {
+    const { data, error } = await supabase
+      .from("_dummy_")
+      .select("*")
+      .limit(1)
+      .then(
+        () => ({ data: null, error: null }),
+        (err) => ({ data: null, error: err })
+      );
+
+    if (error && !error.message.includes('relation "_dummy_" does not exist')) {
+      throw new Error(`Failed to connect to Supabase: ${error.message}`);
+    }
+
+    // Use the REST API to execute SQL (this is a workaround since we don't have RPC functions)
+    const response = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify({
+        query: sql,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Error executing SQL (${description}): ${errorText}`);
+    }
+
+    console.log(`Successfully executed: ${description}`);
+  } catch (error) {
+    console.error(`Error executing SQL (${description}):`, error.message);
+    throw error;
+  }
+}
 
 /**
  * Set up database tables
@@ -31,13 +77,51 @@ async function setupDatabase() {
   console.log("Setting up database...");
 
   try {
+    // First check if we can connect to Supabase
+    try {
+      // Try a simple query to test connection
+      const { error } = await supabase.from("users").select("*").limit(1);
+
+      // If we get a "relation does not exist" error, that's actually good - it means we're connected
+      // but the table doesn't exist yet (which is expected)
+      if (error) {
+        if (
+          error.message.includes('relation "users" does not exist') ||
+          error.message.includes('relation "public.users" does not exist')
+        ) {
+          console.log(
+            "Successfully connected to Supabase (users table doesn't exist yet, which is expected)"
+          );
+        } else {
+          // This is an actual error we should handle
+          throw error;
+        }
+      } else {
+        console.log(
+          "Successfully connected to Supabase (users table already exists)"
+        );
+      }
+    } catch (connectionError) {
+      // Only throw if it's not the expected "relation does not exist" error
+      if (
+        !connectionError.message.includes('relation "users" does not exist') &&
+        !connectionError.message.includes(
+          'relation "public.users" does not exist'
+        )
+      ) {
+        throw new Error(
+          `Failed to connect to Supabase: ${connectionError.message}`
+        );
+      }
+      console.log(
+        "Successfully connected to Supabase (users table doesn't exist yet, which is expected)"
+      );
+    }
+
     // Create users table
     console.log("Creating users table...");
-    const { error: usersError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "users",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS users (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
@@ -47,21 +131,13 @@ async function setupDatabase() {
         last_name TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE
-      `,
-      }
-    );
-
-    if (usersError) {
-      throw new Error(`Error creating users table: ${usersError.message}`);
-    }
+      )
+    `);
 
     // Create DJ profiles table
     console.log("Creating dj_profiles table...");
-    const { error: djProfilesError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "dj_profiles",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS dj_profiles (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         stage_name TEXT NOT NULL,
@@ -74,23 +150,13 @@ async function setupDatabase() {
         languages TEXT[] DEFAULT '{English}',
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE
-      `,
-      }
-    );
-
-    if (djProfilesError) {
-      throw new Error(
-        `Error creating dj_profiles table: ${djProfilesError.message}`
-      );
-    }
+      )
+    `);
 
     // Create bookings table
     console.log("Creating bookings table...");
-    const { error: bookingsError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "bookings",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS bookings (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         host_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         dj_profile_id UUID NOT NULL REFERENCES dj_profiles(id) ON DELETE CASCADE,
@@ -103,23 +169,13 @@ async function setupDatabase() {
         notes TEXT,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE
-      `,
-      }
-    );
-
-    if (bookingsError) {
-      throw new Error(
-        `Error creating bookings table: ${bookingsError.message}`
-      );
-    }
+      )
+    `);
 
     // Create streams table
     console.log("Creating streams table...");
-    const { error: streamsError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "streams",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS streams (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
         dj_profile_id UUID NOT NULL REFERENCES dj_profiles(id) ON DELETE CASCADE,
@@ -132,21 +188,13 @@ async function setupDatabase() {
         ivs_stream_key TEXT NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE
-      `,
-      }
-    );
-
-    if (streamsError) {
-      throw new Error(`Error creating streams table: ${streamsError.message}`);
-    }
+      )
+    `);
 
     // Create payments table
     console.log("Creating payments table...");
-    const { error: paymentsError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "payments",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS payments (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
         host_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -159,63 +207,21 @@ async function setupDatabase() {
         status TEXT NOT NULL CHECK (status IN ('pending', 'processing', 'succeeded', 'failed', 'refunded')),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
         updated_at TIMESTAMP WITH TIME ZONE
-      `,
-      }
-    );
-
-    if (paymentsError) {
-      throw new Error(
-        `Error creating payments table: ${paymentsError.message}`
-      );
-    }
+      )
+    `);
 
     // Create chat_messages table
     console.log("Creating chat_messages table...");
-    const { error: chatMessagesError } = await supabase.rpc(
-      "create_table_if_not_exists",
-      {
-        table_name: "chat_messages",
-        columns: `
+    await supabase.query(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         stream_id UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
         user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
         user_name TEXT NOT NULL,
         content TEXT NOT NULL,
         created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-      `,
-      }
-    );
-
-    if (chatMessagesError) {
-      throw new Error(
-        `Error creating chat_messages table: ${chatMessagesError.message}`
-      );
-    }
-
-    // Create stored procedure for creating tables if they don't exist
-    console.log("Creating stored procedure...");
-    const { error: procedureError } = await supabase.rpc("execute_sql", {
-      sql: `
-        CREATE OR REPLACE FUNCTION create_table_if_not_exists(
-          table_name TEXT,
-          columns TEXT
-        ) RETURNS VOID AS $$
-        BEGIN
-          IF NOT EXISTS (
-            SELECT FROM pg_tables
-            WHERE schemaname = 'public'
-            AND tablename = table_name
-          ) THEN
-            EXECUTE format('CREATE TABLE %I (%s)', table_name, columns);
-          END IF;
-        END;
-        $$ LANGUAGE plpgsql;
-      `,
-    });
-
-    if (procedureError) {
-      console.log("Stored procedure might already exist, continuing...");
-    }
+      )
+    `);
 
     // Create indexes for performance
     console.log("Creating indexes...");
@@ -234,12 +240,7 @@ async function setupDatabase() {
     ];
 
     for (const indexSql of indexes) {
-      const { error: indexError } = await supabase.rpc("execute_sql", {
-        sql: indexSql,
-      });
-      if (indexError) {
-        console.error(`Error creating index: ${indexError.message}`);
-      }
+      await supabase.query(indexSql);
     }
 
     // Enable row-level security
@@ -254,12 +255,7 @@ async function setupDatabase() {
     ];
 
     for (const rlsSql of rlsPolicies) {
-      const { error: rlsError } = await supabase.rpc("execute_sql", {
-        sql: rlsSql,
-      });
-      if (rlsError) {
-        console.error(`Error enabling RLS: ${rlsError.message}`);
-      }
+      await supabase.query(rlsSql);
     }
 
     console.log("Database setup completed successfully!");

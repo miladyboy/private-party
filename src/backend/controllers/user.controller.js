@@ -74,10 +74,10 @@ const UserController = {
         },
       });
     } catch (error) {
-      logger.error(`Registration error: ${error.message}`);
+      logger.error(`Registration error: ${error}`);
 
       // Handle specific errors
-      if (error.message.includes("already exists")) {
+      if (error && error.message && error.message.includes("already exists")) {
         return res.status(409).json({
           status: "error",
           message: "Email already exists",
@@ -87,7 +87,7 @@ const UserController = {
       res.status(500).json({
         status: "error",
         message: "Registration failed",
-        error: error.message,
+        error: error ? error.message : "Unknown error",
       });
     }
   },

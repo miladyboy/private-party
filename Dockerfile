@@ -15,11 +15,11 @@ RUN npm run backend:install
 COPY . .
 
 # Expose port
-EXPOSE 5000
+EXPOSE 4000
 
 # Set environment variables
 ENV NODE_ENV=production
-ENV PORT=5000
+ENV PORT=4000
 
 # Run the app
 CMD ["npm", "run", "backend:start"] 
