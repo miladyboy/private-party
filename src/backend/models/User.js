@@ -47,15 +47,25 @@ const User = {
       const { data, error } = await supabase
         .from(TABLES.USERS)
         .select("*")
-        .eq("email", email)
-        .single();
+        .eq("email", email);
 
       if (error) {
         logger.error(`Error getting user by email: ${error.message}`);
         throw error;
       }
 
-      return data;
+      // Handle no records found
+      if (!data || data.length === 0) {
+        logger.warn(`No user found with email: ${email}`);
+        return null;
+      }
+
+      // If multiple records found (should not happen), use the first one
+      if (data.length > 1) {
+        logger.warn(`Multiple users found with email: ${email}, using the first one`);
+      }
+
+      return data[0];
     } catch (error) {
       logger.error(`Error getting user by email: ${error.message}`);
       throw error;
@@ -220,8 +230,39 @@ const User = {
       const user = await User.getByEmail(email);
 
       if (!user) {
-        logger.error("User not found in database");
-        throw new Error("User not found");
+        logger.warn(`User authenticated with Supabase Auth but not found in database table: ${email}`);
+        
+        // Create user record in our database table if they exist in Auth but not in our table
+        // This helps recover from situations where user registration didn't complete properly
+        const newUserData = {
+          email,
+          password: await bcrypt.hash(password, 10), // Hash the password for storage
+          role: "host", // Default role
+          auth_id: authData.user.id,
+          created_at: new Date(),
+        };
+        
+        const result = await db.insert(TABLES.USERS, newUserData);
+        
+        if (!result || result.length === 0) {
+          logger.error("Failed to create user record in database during authentication recovery");
+          throw new Error("Authentication failed - database error");
+        }
+        
+        logger.info(`Created missing user record during authentication: ${result[0].id}`);
+        
+        // Generate token for the new user
+        const token = generateToken(result[0]);
+        
+        return {
+          user: {
+            id: result[0].id,
+            email: result[0].email,
+            role: result[0].role,
+            created_at: result[0].created_at,
+          },
+          token,
+        };
       }
 
       // Generate token
