@@ -1,51 +1,4 @@
-const { createClient } = require("@supabase/supabase-js");
-const path = require("path");
-const dotenv = require("dotenv");
-const fs = require("fs");
-
-// Load environment variables from backend .env file
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
-
-// Get Supabase credentials from environment variables
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-
-// Validate Supabase credentials
-if (!supabaseUrl || !supabaseKey) {
-  console.error(
-    "Supabase URL and key are required. Please set SUPABASE_URL and SUPABASE_KEY in your src/backend/.env file"
-  );
-  process.exit(1);
-}
-
-// Log for debugging (remove in production)
-console.log(`Connecting to Supabase at: ${supabaseUrl}`);
-
-// Initialize Supabase client
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-/**
- * Creates a SQL migration file - to be run directly in the Supabase SQL editor
- */
-async function setupDatabase() {
-  console.log("Setting up database...");
-
-  try {
-    // Test connection to Supabase
-    const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      throw new Error(`Failed to connect to Supabase: ${error.message}`);
-    }
-    console.log("Successfully connected to Supabase");
-
-    // Create the migrations directory if it doesn't exist
-    const migrationsDir = path.resolve(__dirname, "../migrations");
-    if (!fs.existsSync(migrationsDir)) {
-      fs.mkdirSync(migrationsDir, { recursive: true });
-    }
-
-    // SQL for creating tables
-    const migrationSQL = `-- Create extension for UUID generation
+-- Create extension for UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create users table
@@ -154,33 +107,4 @@ ALTER TABLE dj_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE streams ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;`;
-    
-    // Write the migration SQL to a file
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
-    const migrationFile = path.join(migrationsDir, `${timestamp}_initial_schema.sql`);
-    fs.writeFileSync(migrationFile, migrationSQL);
-    
-    console.log(`Migration file created at: ${migrationFile}`);
-    console.log('\nTo set up your database:');
-    console.log('1. Go to your Supabase project dashboard');
-    console.log('2. Navigate to the SQL Editor');
-    console.log(`3. Copy the contents of the migration file (${migrationFile})`);
-    console.log('4. Paste into the SQL Editor and run it');
-    console.log('\nAlternatively, you can run the following command from the SQL Editor:');
-    console.log(`\nimport '${migrationFile}';\n`);
-    
-    console.log("Database migration file created successfully!");
-  } catch (error) {
-    console.error("Error setting up database:", error.message);
-    process.exit(1);
-  }
-}
-
-// Run the setup
-setupDatabase();
-
-// Export for testing
-module.exports = {
-  setupDatabase,
-};
+ALTER TABLE chat_messages ENABLE ROW LEVEL SECURITY;
